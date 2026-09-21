@@ -9,6 +9,8 @@ return [
     'err_user_not_found' => 'ID de usuário não encontrado em user_currencies.',
     'err_site_not_found' => 'ID do site não encontrado em vote_sites: %s.',
     'err_no_unclaimed_votes' => 'Nenhum voto não reivindicado disponível para o usuário: %s.',
+    'err_claim_forbidden' => 'Você só pode reivindicar recompensas para a sua própria conta.',
     'err_database_generic' => 'Erro no banco de dados: %s',
     'err_db_connection_failed' => 'Falha na conexão com o banco de dados.',
+    'err_processing_failed' => 'Ocorreu um erro interno. Tente novamente mais tarde.',
 ];

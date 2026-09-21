@@ -9,7 +9,9 @@ return [
     'err_user_not_found' => 'ID utilisateur non trouvé dans user_currencies.',
     'err_site_not_found' => 'ID du site non trouvé dans vote_sites : %s.',
     'err_no_unclaimed_votes' => 'Aucun vote non réclamé disponible pour l\'utilisateur : %s.',
+    'err_claim_forbidden' => 'Vous ne pouvez réclamer des récompenses que pour votre propre compte.',
     'err_database_generic' => 'Erreur de base de données : %s',
     'err_db_connection_failed' => 'Échec de la connexion à la base de données.',
+    'err_processing_failed' => 'Une erreur interne est survenue. Veuillez réessayer plus tard.',
 ];
 ?>

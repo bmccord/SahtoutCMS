@@ -2,19 +2,16 @@
 // Start output buffering to catch any stray output
 ob_start();
 
-// Temporary logging for debugging (CSRF token is redacted from the log)
-$log_post = $_POST ?? [];
-$log_session = $_SESSION ?? [];
-if (isset($log_post['csrf_token'])) $log_post['csrf_token'] = '[REDACTED]';
-if (isset($log_session['csrf_token'])) $log_session['csrf_token'] = '[REDACTED]';
-file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Request: " . json_encode($log_post) . ", Session: " . json_encode($log_session) . ", IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown') . PHP_EOL, FILE_APPEND);
-
-// Set error handling to log errors instead of displaying them
+// Set error handling to log errors instead of displaying them.
+// Logging goes to the server-side PHP error log only: no request data, session
+// data, CSRF tokens or credentials are ever written to a log file again
+// (the previous 'claim_log.txt' file was written inside the web root).
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL); // Capture all errors and warnings
 set_error_handler(function($severity, $message, $file, $line) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "PHP Error [$severity]: $message in $file on line $line" . PHP_EOL, FILE_APPEND);
+    // Server-side only, and never any POST/session/token values
+    error_log(sprintf('pingback/claim.php PHP error [%d]: %s in %s on line %d', $severity, $message, $file, $line));
     return true; // Suppress display of errors
 });
 require_once __DIR__ . '/../../includes/paths.php';
@@ -26,11 +23,12 @@ try {
     require_once $project_root . 'includes/session.php';
     require_once $project_root . 'languages/language.php';
 } catch (Exception $e) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Include failed: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
+    // Log server-side only; never return internal paths/details to the client
+    error_log('pingback/claim.php: required includes failed: ' . $e->getMessage());
     ob_end_clean();
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => "Include failed: " . $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "Internal server error."]);
     exit;
 }
 
@@ -42,12 +40,9 @@ $translate = function($key, $default) {
             if (function_exists('translate')) {
                 $translations = true; // Translation system is loaded
                 return translate($key, $default);
-            } else {
-                file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Translation function not defined in language.php" . PHP_EOL, FILE_APPEND);
-                $translations = false;
             }
+            $translations = false;
         } catch (Exception $e) {
-            file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Translation system error: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
             $translations = false;
         }
     }
@@ -56,7 +51,7 @@ $translate = function($key, $default) {
 
 // Check database connection
 if (!$site_db || !$site_db instanceof mysqli || $site_db->connect_error) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Database connection failed: " . ($site_db->connect_error ?? 'Unknown error') . PHP_EOL, FILE_APPEND);
+    error_log('pingback/claim.php: site database connection failed.');
     ob_end_clean();
     http_response_code(500);
     header('Content-Type: application/json');
@@ -64,14 +59,23 @@ if (!$site_db || !$site_db instanceof mysqli || $site_db->connect_error) {
     exit;
 }
 
-// Validate CSRF token and POST data
-$user_id = isset($_POST['user_id']) ? (int)$_POST['user_id'] : 0;
-$site_id = isset($_POST['site_id']) ? $_POST['site_id'] : null;
-$csrf_token = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : null;
+// Only POST requests can carry the CSRF token; reject every other request
+// method (GET/HEAD/... can never satisfy the token check below anyway)
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    ob_end_clean();
+    http_response_code(403);
+    header('Content-Type: application/json');
+    echo json_encode(["status" => "error", "message" => $translate('err_invalid_csrf', 'Invalid CSRF token.')]);
+    exit;
+}
+
+// Validate CSRF token and POST data (never trust a non-scalar POST value)
+$user_id = (isset($_POST['user_id']) && is_numeric($_POST['user_id'])) ? (int)$_POST['user_id'] : 0;
+$site_id = (isset($_POST['site_id']) && is_string($_POST['site_id'])) ? $_POST['site_id'] : null;
+$csrf_token = (isset($_POST['csrf_token']) && is_string($_POST['csrf_token'])) ? $_POST['csrf_token'] : null;
 
 // Validate the session CSRF token (generated centrally in includes/session.php)
 if (!is_string($_SESSION['csrf_token'] ?? null) || !hash_equals($_SESSION['csrf_token'], (string)$csrf_token)) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Invalid CSRF token." . PHP_EOL, FILE_APPEND);
     ob_end_clean();
     http_response_code(403);
     header('Content-Type: application/json');
@@ -81,7 +85,6 @@ if (!is_string($_SESSION['csrf_token'] ?? null) || !hash_equals($_SESSION['csrf_
 
 // Ensure the authenticated session user can only claim rewards for their own account
 if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] !== $user_id) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Reward claim denied for user_id=$user_id (session user_id=" . ($_SESSION['user_id'] ?? 'none') . ').' . PHP_EOL, FILE_APPEND);
     ob_end_clean();
     http_response_code(403);
     header('Content-Type: application/json');
@@ -90,7 +93,6 @@ if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] !== $user_id) {
 }
 
 if (!$user_id) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Invalid user ID." . PHP_EOL, FILE_APPEND);
     ob_end_clean();
     http_response_code(400);
     header('Content-Type: application/json');
@@ -99,36 +101,36 @@ if (!$user_id) {
 }
 
 // Validate user_id and fetch username
-$stmt = $site_db->prepare("SELECT account_id, username FROM user_currencies WHERE account_id = ?");
-if (!$stmt) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Failed to prepare user_currencies query: " . $site_db->error . PHP_EOL, FILE_APPEND);
+// (wrapped so that driver/database failures can never escape to the client)
+try {
+    $stmt = $site_db->prepare("SELECT account_id, username FROM user_currencies WHERE account_id = ?");
+    if (!$stmt) {
+        throw new Exception('failed to prepare user_currencies query: ' . $site_db->error);
+    }
+    $stmt->bind_param("i", $user_id);
+    if (!$stmt->execute()) {
+        throw new Exception('failed to execute user_currencies query: ' . $stmt->error);
+    }
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        ob_end_clean();
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode(["status" => "error", "message" => $translate('err_user_not_found', 'User ID not found in user_currencies.')]);
+        exit;
+    }
+    $user = $result->fetch_assoc();
+    $username = $user['username'];
+    $stmt->close();
+} catch (Exception $e) {
+    // mysqli_sql_exception extends Exception, so driver errors are caught as well
+    error_log('pingback/claim.php: user lookup failed: ' . $e->getMessage());
     ob_end_clean();
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => sprintf($translate('err_database_generic', 'Database error: %s'), $site_db->error)]);
+    echo json_encode(["status" => "error", "message" => $translate('err_processing_failed', 'An internal error occurred. Please try again later.')]);
     exit;
 }
-$stmt->bind_param("i", $user_id);
-if (!$stmt->execute()) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Failed to execute user_currencies query: " . $stmt->error . PHP_EOL, FILE_APPEND);
-    ob_end_clean();
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => sprintf($translate('err_database_generic', 'Database error: %s'), $stmt->error)]);
-    exit;
-}
-$result = $stmt->get_result();
-if ($result->num_rows === 0) {
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "User ID not found: $user_id" . PHP_EOL, FILE_APPEND);
-    ob_end_clean();
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => $translate('err_user_not_found', 'User ID not found in user_currencies.')]);
-    exit;
-}
-$user = $result->fetch_assoc();
-$username = $user['username'];
-$stmt->close();
 
 // Start transaction
 $site_db->begin_transaction();
@@ -149,7 +151,7 @@ try {
         }
         $result = $stmt->get_result();
         if ($result->num_rows === 0) {
-            file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Site not found: $site_id" . PHP_EOL, FILE_APPEND);
+            $site_db->rollback();
             ob_end_clean();
             http_response_code(400);
             header('Content-Type: application/json');
@@ -170,12 +172,28 @@ try {
         }
     }
 
-    // Check for unclaimed votes
+    // The IN (...) list is built exclusively from vote_sites.id values read from
+    // the database and forced to integers; every value is still bound as a
+    // parameter, so no user input ever reaches the SQL text.
+    $internal_site_ids = array_map('intval', $internal_site_ids);
+
+    // Never build an empty "IN ()" clause (invalid SQL): nothing can be claimed
+    if (empty($internal_site_ids)) {
+        $site_db->rollback();
+        ob_end_clean();
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode(["status" => "error", "message" => sprintf($translate('err_no_unclaimed_votes', 'No unclaimed votes available for user: %s.'), $username)]);
+        exit;
+    }
+
+    // Check for unclaimed votes (locking read: rows stay locked until commit)
     $where_clause = $site_id ? "site_id = ?" : "site_id IN (" . implode(',', array_fill(0, count($internal_site_ids), '?')) . ")";
     $stmt = $site_db->prepare("
         SELECT COUNT(*) as vote_count
         FROM vote_log
         WHERE user_id = ? AND $where_clause AND reward_status = 0 AND vote_timestamp >= ?
+        FOR UPDATE
     ");
     if (!$stmt) {
         throw new Exception(sprintf($translate('err_database_generic', 'Database error: %s'), $site_db->error));
@@ -191,7 +209,7 @@ try {
     $stmt->close();
 
     if ($vote_count === 0) {
-        file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "No unclaimed votes for user: $username, site_id: " . ($site_id ?: 'all') . PHP_EOL, FILE_APPEND);
+        $site_db->rollback();
         ob_end_clean();
         http_response_code(403);
         header('Content-Type: application/json');
@@ -231,12 +249,14 @@ try {
     }
     $stmt->close();
 
-    // Fetch unclaimed, non-expired votes
+    // Fetch unclaimed, non-expired votes (same locking read: the rows returned
+    // here are the exact rows that will be credited and deleted below)
     $stmt = $site_db->prepare("
         SELECT vl.id, vl.site_id, vl.user_id, vl.ip_address, vl.vote_timestamp, vl.reward_status, vs.reward_points
         FROM vote_log vl
         JOIN vote_sites vs ON vl.site_id = vs.id
         WHERE vl.user_id = ? AND $where_clause AND vl.reward_status = 0 AND vl.vote_timestamp >= ?
+        FOR UPDATE
     ");
     if (!$stmt) {
         throw new Exception(sprintf($translate('err_database_generic', 'Database error: %s'), $site_db->error));
@@ -301,7 +321,6 @@ try {
 
     // Commit transaction
     $site_db->commit();
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Reward claimed: user_id=$user_id, points=$total_points, site_id: " . ($site_id ?: 'all') . PHP_EOL, FILE_APPEND);
     ob_end_clean();
     http_response_code(200);
     header('Content-Type: application/json');
@@ -312,11 +331,12 @@ try {
     ]);
 } catch (Exception $e) {
     $site_db->rollback();
-    file_put_contents('claim_log.txt', date('[Y-m-d H:i:s] ') . "Error claiming rewards: " . $e->getMessage() . PHP_EOL, FILE_APPEND);
+    // Internal details stay server-side; the client only gets a generic message
+    error_log('pingback/claim.php: error while claiming rewards: ' . $e->getMessage());
     ob_end_clean();
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => sprintf($translate('err_database_generic', 'Database error: %s'), $e->getMessage())]);
+    echo json_encode(["status" => "error", "message" => $translate('err_processing_failed', 'An internal error occurred. Please try again later.')]);
 }
 
 // Close database connections
