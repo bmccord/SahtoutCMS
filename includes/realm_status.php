@@ -40,10 +40,6 @@ function getRealmLockFile($realmId) {
 
 function readRealmCache($realmId) {
     $file = getRealmCacheFile($realmId);
-    if (!is_file($file) || !is_readable($file)) {
-        return null;
-    }
-
     $contents = @file_get_contents($file);
     if ($contents === false) {
         return null;
@@ -376,7 +372,10 @@ function getRealmStatusData($realm, $char_db, $auth_db) {
         $playerbotsMissing = false;
 
         if ($online) {
-            $playerStats = getOnlinePlayerStats($char_db);
+            $playerStats = getOnlinePlayerStats(
+                $char_db,
+                $realm['playerbots_db'] ?? 'acore_playerbots'
+            );
             $players = $playerStats['players'];
             $realPlayers = $playerStats['real_players'];
             $botCount = $playerStats['bots'];

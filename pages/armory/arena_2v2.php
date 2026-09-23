@@ -7,6 +7,27 @@ require_once __DIR__ . '/../../includes/paths.php';
 // Use $project_root for filesystem includes
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
+require_once $project_root . 'includes/armory_playerbots.php';
+
+// Load Armory Configuration
+$armoryConfigFile = $project_root . 'includes/armory_config.php';
+$armoryConfig = [];
+if (file_exists($armoryConfigFile)) {
+    require_once $armoryConfigFile;
+}
+
+$arena2v2Display = $armoryConfig['arena_2v2_display'] ?? 'all';
+
+
+$botJoinClause = '';
+$botWhereClause = '';
+if ($arena2v2Display === 'humans_only' && isset($char_db)) {
+    if (armory_playerbots_table_exists($char_db)) {
+        $botJoinClause = " LEFT JOIN `acore_playerbots`.`playerbots_account_type` pat ON pat.account_id = c.account ";
+        $botWhereClause = " AND (pat.account_id IS NULL OR pat.account_type NOT IN (1, 2)) ";
+    }
+}
+
 
 // Faction from race
 function getFaction($race) {
@@ -26,20 +47,20 @@ $search_error = '';
 if (isset($_GET['search'])) {
     $search = trim($_GET['search']);
 
-    // Remove SQL wildcards
-    $search = str_replace(['%', '_'], '', $search);
-
-    // Limit length
-    $search = substr($search, 0, 16);
+    // Limit length safely using multi-byte substr
+    $search = mb_substr($search, 0, 16);
 
     // Minimum length check
-    if (strlen($search) > 0 && strlen($search) < 2) {
+    if (mb_strlen($search) > 0 && mb_strlen($search) < 2) {
         $search_error = translate('arena_2v2_search_min', 'Please enter at least 2 characters.');
         $search = '';
     }
 }
 
 if ($search !== '') {
+    // Properly escape SQL LIKE special characters (%, _, \)
+    $escaped_search = addcslashes($search, '%_\\');
+
     // Search 2v2 arena teams by team name
     $sql = "
     SELECT 
@@ -55,15 +76,17 @@ if ($search !== '') {
     FROM arena_team at
     JOIN arena_team_member atm ON at.arenaTeamId = atm.arenaTeamId
     JOIN characters c ON atm.guid = c.guid
+    {$botJoinClause}
     WHERE at.type = 2
     AND atm.guid = at.captainGuid
-    AND LOWER(at.name) LIKE LOWER(?)
+    {$botWhereClause}
+    AND at.name LIKE ?
     ORDER BY at.rating DESC
     LIMIT 50
     ";
 
     $stmt = $char_db->prepare($sql);
-    $like = '%' . $search . '%';
+    $like = '%' . $escaped_search . '%';
     $stmt->bind_param('s', $like);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -83,8 +106,10 @@ if ($search !== '') {
     FROM arena_team at
     JOIN arena_team_member atm ON at.arenaTeamId = atm.arenaTeamId
     JOIN characters c ON atm.guid = c.guid
+    {$botJoinClause}
     WHERE at.type = 2
     AND atm.guid = at.captainGuid
+    {$botWhereClause}
     ORDER BY at.rating DESC
     LIMIT 50
     ";
@@ -93,13 +118,14 @@ if ($search !== '') {
 }
 
 $teams = [];
-while ($row = $result->fetch_assoc()) {
-    $teams[] = $row;
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $teams[] = $row;
+    }
 }
 
-// Ensure site settings and translations are loaded for page head config
+// Ensure site settings are loaded for page head config
 require_once $project_root . 'includes/config.settings.php';
-require_once $project_root . 'languages/language.php';
 
 // Page configuration
 $page_title = $site_title_name . " " . translate('arena_2v2_page_title', 'Top 50 2v2 Arena Teams');

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../../includes/paths.php';
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
 require_once $project_root . 'includes/config.settings.php';
+require_once $project_root . 'includes/armory_playerbots.php';
 
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'moderator'])) {
     header("Location: {$base_path}login");
@@ -57,41 +58,6 @@ function isValidRealmHost($value) {
     return filter_var($candidate, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
 }
 
-/**
- * Checks whether the optional Playerbots database exists on this MySQL server.
- *
- * Probed via information_schema.SCHEMATA, which does not require any
- * privileges on the playerbots database itself. This is a pure database
- * existence check: it is deliberately independent of the realm TCP/online
- * status check, so it works even when the realm is offline.
- */
-function playerbotsDatabaseExists($mysqli, $playerbotsDb) {
-    if (!$mysqli) {
-        return false;
-    }
-
-    $available = false;
-    try {
-        $stmt = @$mysqli->prepare('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?');
-        if ($stmt) {
-            $stmt->bind_param('s', $playerbotsDb);
-            if (@$stmt->execute()) {
-                $result = $stmt->get_result();
-                if ($result) {
-                    $available = $result->num_rows > 0;
-                    $result->free();
-                }
-            }
-            $stmt->close();
-        }
-    } catch (Throwable $e) {
-        // Probe failure = treat the optional DB as unavailable.
-        $available = false;
-    }
-
-    return $available;
-}
-
 $currentPlayerDisplay = $currentRealm['player_display'] ?? 'all';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -130,109 +96,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = translate('err_realm_port_invalid', 'Realm Port must be a valid number (1-65535).');
         }
 
-    // Handle logo upload
-        if (isset($_FILES['realm_logo']) && $_FILES['realm_logo']['error'] === UPLOAD_ERR_OK) {
-            $file_tmp = $_FILES['realm_logo']['tmp_name'];
-            $file_name = $_FILES['realm_logo']['name'];
-            $file_size = $_FILES['realm_logo']['size'];
-            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-            $allowed_exts = ['png', 'jpg', 'jpeg', 'webp'];
-            $max_size = 2 * 1024 * 1024;
+   if (empty($errors)) {
+    // Handle logo upload securely
+    if (isset($_FILES['realm_logo']) && $_FILES['realm_logo']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp   = $_FILES['realm_logo']['tmp_name'];
+        $file_name  = $_FILES['realm_logo']['name'];
+        $file_size  = $_FILES['realm_logo']['size'];
+        $file_ext   = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        $allowedExt = ['png', 'jpg', 'jpeg', 'webp'];
+        $max_size   = 2 * 1024 * 1024;
 
-            if ($file_size > $max_size) {
-                $errors[] = translate('error_realm_logo_too_large', 'Realm logo size exceeds 2MB.');
-            } elseif (!in_array($file_ext, $allowed_exts)) {
+        if ($file_size > $max_size) {
+            $errors[] = translate('error_realm_logo_too_large', 'Realm logo size exceeds 2MB.');
+        } elseif (!in_array($file_ext, $allowedExt, true)) {
+            $errors[] = translate('error_invalid_realm_logo_type', 'Invalid file type. Only PNG, JPG, or WebP allowed.');
+        } else {
+            $imageInfo    = @getimagesize($file_tmp);
+            $detectedMime = $imageInfo['mime'] ?? '';
+
+            if (!in_array($detectedMime, ['image/png', 'image/jpeg', 'image/webp'], true)) {
                 $errors[] = translate('error_invalid_realm_logo_type', 'Invalid file type. Only PNG, JPG, or WebP allowed.');
             } else {
-                // Verify the actual file content server-side. Never trust the
-                // filename extension or the client-provided $_FILES['type'].
-                $detectedMime = '';
-                $imageInfo = @getimagesize($file_tmp);
-                if (is_array($imageInfo) && !empty($imageInfo['mime'] ?? '')) {
-                    $detectedMime = $imageInfo['mime'];
-                }
-                if (!in_array($detectedMime, ['image/png', 'image/jpeg', 'image/webp'])) {
-                    $errors[] = translate('error_invalid_realm_logo_type', 'Invalid file type. Only PNG, JPG, or WebP allowed.');
+                $upload_dir = $project_root . 'img/logos/';
+                if (!is_dir($upload_dir) && !@mkdir($upload_dir, 0755, true)) {
+                    $errors[] = translate('error_realm_logo_upload_failed', 'Upload directory is not accessible or writable.');
                 } else {
-                    $upload_dir = $project_root . 'img/logos/';
-                    if (!is_dir($upload_dir) || !is_writable($upload_dir)) {
-                        $errors[] = translate('error_realm_logo_upload_failed', 'Upload directory is not accessible or writable.');
-                    } else {
-                        $new_file_name = 'realm_logo.' . $file_ext;
-                        $destination = $upload_dir . $new_file_name;
+                    // Cache buster filename to prevent browser cache stalls & file collision
+                    $new_file_name = 'realm_logo_' . time() . '.' . $file_ext;
+                    $destination   = $upload_dir . $new_file_name;
 
-                        if (move_uploaded_file($file_tmp, $destination)) {
-                            $logo_path = "img/logos/$new_file_name";
-                        } else {
-                            $errors[] = translate('error_realm_logo_upload_failed', 'Failed to upload realm logo.');
-                        }
+                    if (move_uploaded_file($file_tmp, $destination)) {
+                        $logo_path = "img/logos/{$new_file_name}";
+                    } else {
+                        $errors[] = translate('error_realm_logo_upload_failed', 'Failed to upload realm logo.');
                     }
                 }
             }
         }
+    }
 
     if (empty($errors)) {
-            $newRealmList = [
-                [
-                    'id' => 1,
-                    'name' => $realmName,
-                    'address' => $realmAddress,
-                    'check_address' => $realmCheckAddress,
-                    'port' => $realmPort,
-                    'logo' => $logo_path,
-                    'player_display' => $playerDisplay
-                ]
-            ];
+        $newRealmList = [
+            [
+                'id'             => 1,
+                'name'           => $realmName,
+                'address'        => $realmAddress,
+                'check_address'  => $realmCheckAddress,
+                'port'           => $realmPort,
+                'logo'           => $logo_path,
+                'player_display' => $playerDisplay
+            ]
+        ];
 
-            $configPhp  = "<?php\n";
-            $configPhp .= "if (!defined('ALLOWED_ACCESS')) { exit('Forbidden'); }\n\n";
-            $configPhp .= '$realmlist = ' . var_export($newRealmList, true) . ";\n";
+        $configPhp  = "<?php\n";
+        $configPhp .= "if (!defined('ALLOWED_ACCESS')) { exit('Forbidden'); }\n\n";
+        $configPhp .= '$realmlist = ' . var_export($newRealmList, true) . ";\n";
 
-            $configDir = dirname($realmsFile);
+        $configDir = dirname($realmsFile);
+        $tmpConfigFile = $configDir . '/.realm_config_' . bin2hex(random_bytes(8)) . '.tmp';
 
-            if (!is_writable($configDir)) {
-                $errors[] = sprintf(translate('err_config_dir_not_writable', 'Config directory is not writable: %s'), $configDir);
-            } else {
-                // Write the configuration atomically: write to a temporary file
-                // in the same directory, then rename() over the target. This
-                // prevents a partial or empty realm_config.php if the process
-                // is interrupted mid-write. (tempnam() is avoided because its
-                // reserved file can be locked and non-renameable on Windows.)
-                $tmpConfigFile = $configDir . '/' . 'realm_config.tmp.' . bin2hex(random_bytes(8));
-                if (file_put_contents($tmpConfigFile, $configPhp, LOCK_EX) === false) {
-                    @unlink($tmpConfigFile);
-                    $errors[] = sprintf(translate('err_write_realm_config', 'Cannot write realm configuration file: %s'), $realmsFile);
-                } else {
-                    // On Windows, rename() over an existing file can fail
-                    // transiently while another request still holds the
-                    // destination open (e.g. an in-flight include of
-                    // realm_config.php). Retry a few times with a short
-                    // back-off before giving up; on success the swap is
-                    // still atomic.
-                    $renamed = false;
-                    for ($attempt = 0; $attempt < 3; $attempt++) {
-                        if (@rename($tmpConfigFile, $realmsFile)) {
-                            $renamed = true;
-                            break;
-                        }
-                        usleep(50000); // 50ms
-                    }
-                    if (!$renamed) {
-                        @unlink($tmpConfigFile);
-                        $errors[] = sprintf(translate('err_write_realm_config', 'Cannot write realm configuration file: %s'), $realmsFile);
-                    } else {
-                        $success = true;
-
-                        // After a successful save, check whether the optional
-                        // Playerbots database exists on the MySQL server.
-                        // Uses the characters DB connection created in
-                        // includes/config.php (loaded via session.php), so
-                        // this works even when the realm itself is offline.
-                        $playerbotsMissing = !playerbotsDatabaseExists($char_db ?? null, 'acore_playerbots');
-                    }
+        if (file_put_contents($tmpConfigFile, $configPhp, LOCK_EX) === false) {
+            @unlink($tmpConfigFile);
+            $errors[] = sprintf(translate('err_write_realm_config', 'Cannot write realm configuration file: %s'), $realmsFile);
+        } else {
+            $renamed = false;
+            for ($attempt = 0; $attempt < 3; $attempt++) {
+                if (PHP_OS_FAMILY === 'Windows' && file_exists($realmsFile)) {
+                    @unlink($realmsFile);
                 }
+                if (@rename($tmpConfigFile, $realmsFile)) {
+                    $renamed = true;
+                    break;
+                }
+                usleep(50000);
+            }
+
+            if (file_exists($tmpConfigFile)) {
+                @unlink($tmpConfigFile);
+            }
+
+            if (!$renamed) {
+                $errors[] = sprintf(translate('err_write_realm_config', 'Cannot write realm configuration file: %s'), $realmsFile);
+            } else {
+                if (function_exists('opcache_invalidate')) {
+                    opcache_invalidate($realmsFile, true);
+                }
+
+                $success = true;
+                $playerbotsMissing = !armory_playerbots_table_exists($char_db ?? null);
             }
         }
+    }
+}
     }
 }
 ob_start();
@@ -337,16 +292,13 @@ include $project_root . 'includes/header.php';
                     <?php endif; ?>
 
                     <?php if ($success && $playerbotsMissing): ?>
-                        <!-- Admin/moderator-only: the optional Playerbots database is missing.
+                        <!-- Admin/moderator-only: the optional Playerbots database/table is not detected.
                              This page already blocks guests/normal users via the role check at the top. -->
                         <div class="bg-amber-500/15 border border-amber-500/40 text-amber-400 
                                     p-4 rounded-sm flex items-start gap-3">
                             <i class="fas fa-exclamation-triangle text-xl mt-0.5"></i>
                             <div>
-                                <strong><?php echo translate('playerbots_db_missing', 'Playerbot database not found.'); ?></strong>
-                                <div class="text-sm mt-1">
-                                    <?php echo htmlspecialchars(translate('playerbots_db_missing_stats', 'Bot statistics will be unavailable until the acore_playerbots database is installed.'), ENT_QUOTES); ?>
-                                </div>
+                                <strong><?php echo htmlspecialchars(translate('playerbots_db_table_missing', 'Playerbots database/table not detected. Bot statistics are unavailable until acore_playerbots.playerbots_account_type is available.'), ENT_QUOTES); ?></strong>
                             </div>
                         </div>
                     <?php endif; ?>

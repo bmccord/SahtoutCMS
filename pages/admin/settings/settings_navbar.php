@@ -20,7 +20,9 @@ if (strpos($current_path, 'admin/settings/general') !== false) {
     $active_setting = 'realm';
 } elseif (strpos($current_path, 'admin/settings/soap') !== false) {
     $active_setting = 'soap';
-} elseif (strpos($current_path, 'admin/settings/vote_sites') !== false) {
+} elseif (strpos($current_path, 'admin/settings/armory') !== false) {
+    $active_setting = 'armory';
+} elseif (strpos($current_path, 'admin/settings/vote_sites') !== false || strpos($current_path, 'admin/settings/vote-sites') !== false) {
     $active_setting = 'vote-sites';
 } elseif (strpos($current_path, 'admin/settings/page_manager') !== false) {
     $active_setting = 'page_manager';
@@ -36,15 +38,14 @@ $links = [
     'recaptcha'    => ['icon' => 'fa-shield-alt', 'label' => translate('settings_nav_recaptcha', 'reCAPTCHA')],
     'realm'        => ['icon' => 'fa-server',     'label' => translate('settings_nav_realm', 'Realm')],
     'soap'         => ['icon' => 'fa-code',       'label' => translate('settings_nav_soap', 'SOAP')],
+    'armory'       => ['icon' => 'fa-users', 'label' => translate('settings_nav_armory', 'Armory')],
     'vote-sites'   => ['icon' => 'fa-vote-yea',   'label' => translate('settings_nav_vote_sites', 'Vote Sites')],
     'page_manager' => ['icon' => 'fa-file-alt',   'label' => translate('settings_nav_page_manager', 'Page Manager')],
 ];
 ?>
 
 <style>
-    /* Only keep what Tailwind CANNOT do */
-    
-    /* Custom clip-path for nav items - Tailwind doesn't support this */
+    /* Custom clip-path for nav items */
     .nav-clip {
         clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
     }
@@ -59,7 +60,6 @@ $links = [
         position: relative;
     }
     
-    /* Outer gold corner decorations */
     .panel-corners::after {
         content: '';
         position: absolute;
@@ -77,7 +77,6 @@ $links = [
         background-repeat: no-repeat;
     }
     
-    /* Inner border inset (the missing piece) */
     .panel-corners::before {
         content: '';
         position: absolute;
@@ -86,7 +85,6 @@ $links = [
         pointer-events: none;
     }
     
-    /* Section title font */
     .section-title {
         font-family: 'Cinzel', serif;
     }
@@ -114,7 +112,7 @@ $links = [
                            hover:bg-[rgba(201,162,39,0.15)] hover:border-[#f2cf5b] 
                            cursor-pointer transition-all duration-300 shrink-0
                            [clip-path:polygon(4px_0,100%_0,100%_calc(100%-4px),calc(100%-4px)_100%,0_100%,0_4px)]" 
-                        aria-label="Toggle settings navigation">
+                aria-label="Toggle settings navigation">
                 <i class="fas fa-bars"></i>
             </button>
 
@@ -135,7 +133,6 @@ $links = [
                 <?php foreach ($links as $key => $data): 
                     $active = $is_active($key);
                     
-                    // Base classes for all nav items
                     $base_classes = 'group relative flex items-center gap-2 px-4 py-2.5 
                                     font-semibold text-xs tracking-wide 
                                     transition-all duration-300 box-border w-full nav-clip
@@ -146,7 +143,6 @@ $links = [
                                     md:justify-center md:px-2 md:py-2.5 md:whitespace-nowrap 
                                     md:min-h-[42px] md:border-b-2 md:border-transparent';
                     
-                    // Active/Inactive state classes
                     if ($active) {
                         $state_classes = 'text-[#f2cf5b] 
                                          bg-gradient-to-b from-[rgba(201,162,39,0.15)] to-[rgba(201,162,39,0.04)] 
@@ -160,7 +156,6 @@ $links = [
                                          hover:border-b-[rgba(201,162,39,0.3)]';
                     }
                     
-                    // Icon classes
                     $icon_classes = 'w-4 text-center text-sm transition-all duration-300 
                                     shrink-0 group-hover:text-[#f2cf5b] group-hover:scale-110 
                                     max-md:w-5';
@@ -171,9 +166,9 @@ $links = [
                 ?>
                     <li class="flex-1 min-w-[110px] flex">
                         <a class="<?php echo $base_classes . ' ' . $state_classes; ?>" 
-                           href="<?php echo $base_path; ?>admin/settings/<?php echo str_replace('-', '_', $key); ?>">
+                           href="<?php echo htmlspecialchars($base_path, ENT_QUOTES, 'UTF-8'); ?>admin/settings/<?php echo str_replace('-', '_', $key); ?>">
                             <i class="fas <?php echo $data['icon']; ?> <?php echo $icon_classes; ?>"></i> 
-                            <span><?php echo $data['label']; ?></span>
+                            <span><?php echo htmlspecialchars($data['label'], ENT_QUOTES, 'UTF-8'); ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>

@@ -7,6 +7,26 @@ require_once __DIR__ . '/../../includes/paths.php';
 // Use $project_root for filesystem includes
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
+require_once $project_root . 'includes/armory_playerbots.php';
+
+// Load Armory Configuration
+$armoryConfigFile = $project_root . 'includes/armory_config.php';
+$armoryConfig = [];
+if (file_exists($armoryConfigFile)) {
+    require_once $armoryConfigFile;
+}
+
+$arena3v3Display = $armoryConfig['arena_3v3_display'] ?? 'all';
+
+$botJoinClause = '';
+$botWhereClause = '';
+if ($arena3v3Display === 'humans_only' && isset($char_db)) {
+    if (armory_playerbots_table_exists($char_db)) {
+        $botJoinClause = " LEFT JOIN `acore_playerbots`.`playerbots_account_type` pat ON pat.account_id = c.account ";
+        $botWhereClause = " AND (pat.account_id IS NULL OR pat.account_type NOT IN (1, 2)) ";
+    }
+}
+
 
 // Faction from race
 function getFaction($race) {
@@ -37,9 +57,8 @@ if (isset($_GET['search'])) {
 }
 
 if ($search !== '') {
-    // Properly escape SQL LIKE special characters (%, _)
-    // Use simple str_replace instead of addcslashes to avoid escaping backslash issues
-    $escaped_search = str_replace(['%', '_'], ['\%', '\_'], $search);
+    // Properly escape SQL LIKE special characters (%, _, \)
+    $escaped_search = addcslashes($search, '%_\\');
 
     // Search 3v3 arena teams by team name
     $sql = "
@@ -56,8 +75,10 @@ if ($search !== '') {
     FROM arena_team at
     JOIN arena_team_member atm ON at.arenaTeamId = atm.arenaTeamId
     JOIN characters c ON atm.guid = c.guid
+    {$botJoinClause}
     WHERE at.type = 3
     AND atm.guid = at.captainGuid
+    {$botWhereClause}
     AND at.name LIKE ?
     ORDER BY at.rating DESC
     LIMIT 50
@@ -84,8 +105,10 @@ if ($search !== '') {
     FROM arena_team at
     JOIN arena_team_member atm ON at.arenaTeamId = atm.arenaTeamId
     JOIN characters c ON atm.guid = c.guid
+    {$botJoinClause}
     WHERE at.type = 3
     AND atm.guid = at.captainGuid
+    {$botWhereClause}
     ORDER BY at.rating DESC
     LIMIT 50
     ";
@@ -100,9 +123,8 @@ if ($result) {
     }
 }
 
-// Ensure site settings and translations are loaded for page head config
+// Ensure site settings are loaded for page head config
 require_once $project_root . 'includes/config.settings.php';
-require_once $project_root . 'languages/language.php';
 
 // Page configuration
 $page_title = $site_title_name . " " . translate('arena_3v3_page_title', 'Top 50 3v3 Arena Teams');
