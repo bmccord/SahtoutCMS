@@ -146,15 +146,11 @@ SahtoutCMS V2 provides configurable settings for the main components of the webs
 
 ### Realm
 
-* Realm name
-* Realm IP
-* Realm port
-* Realm logo
+* Realm name/IP/Port/logo/..
 
 ### SOAP
 
-* SOAP connection
-* SOAP credentials
+* SOAP connection/credentials
 * GM command configuration
 
 ### Voting
@@ -217,27 +213,17 @@ SahtoutCMS includes an Armory system for displaying player and character informa
 
 Display top players based on:
 
-* Level
-* PvP kills
-* Race
-* Class
-* Faction
-* Guild
+* Level/PvP kills/Race/Class/Faction/Guild
 
 ## 🏟️ Arena Rankings
 
 Arena rankings for:
 
-* 2v2
-* 3v3
-* 5v5
+* 2v2/3v3/5v5
 
 Including:
 
-* Wins
-* Losses
-* Win rate
-* Rating
+* Wins/Losses/Win rate/Rating
 
 ## 🧙 Character Armory
 
@@ -324,15 +310,7 @@ XAMPP is **not required** and is mainly recommended for easy local development a
 The following PHP extensions are required:
 
 ```text
-bcmath
-curl
-gd
-gmp
-mbstring
-mysqli
-openssl
-soap
-xml
+bcmath/curl/gd/gmp/mbstring/mysqli/openssl/soap/xml
 ```
 
 You can check your installed PHP extensions with:
@@ -663,7 +641,10 @@ See the [LICENSE](LICENSE) file for more information.
 <div align="center">
 <img width="671" height="876" alt="4" src="https://github.com/user-attachments/assets/a09a8e37-46a6-43f8-b33f-e1d43263e3ac" />
 </div>
-<img width="1295" height="909" alt="5" src="https://github.com/user-attachments/assets/5d551112-2c1a-47eb-acd6-45a9a88d2216" /><img width="833" height="299" alt="support-button_original" src="https://github.com/user-attachments/assets/9dd2f7de-cc6f-41e3-9b6e-0f2723413e1b" />
+<img width="1446" height="943" alt="5" src="https://github.com/user-attachments/assets/87124183-e10c-4acd-927d-1d3ce210c133" />
+<div align="center">
+<img width="400" height="200" alt="support-button_original" src="https://github.com/user-attachments/assets/9dd2f7de-cc6f-41e3-9b6e-0f2723413e1b" />
+<div align="center">
 <img width="1075" height="660" alt="6" src="https://github.com/user-attachments/assets/36f854bb-75f6-4d71-bbda-e00cbcd368ea" />
 <img width="910" height="601" alt="7" src="https://github.com/user-attachments/assets/b2e78a6e-998a-41bd-bfc1-515f71d06c9b" />
 <img width="1294" height="770" alt="8" src="https://github.com/user-attachments/assets/87488f52-a7f3-41d8-87e5-bc7c17583e61" />
@@ -680,6 +661,9 @@ See the [LICENSE](LICENSE) file for more information.
 <img width="1171" height="907" alt="17" src="https://github.com/user-attachments/assets/548e7ded-7ca3-43f6-9172-7ddd469056d5" />
 <img width="1136" height="379" alt="18" src="https://github.com/user-attachments/assets/3e504ac4-9cdc-4ac9-b344-ae20750004cb" />
 <div align="center">
+  <img width="919" height="856" alt="20" src="https://github.com/user-attachments/assets/84227aa8-e42f-46e7-a991-7f5517a39d85" />
+<img width="1092" height="852" alt="21" src="https://github.com/user-attachments/assets/63ae25fe-3ef1-4bbd-80d8-51c058bbbb3b" />
+
 <img width="812" height="868" alt="19" src="https://github.com/user-attachments/assets/4a58c291-33dd-4e5d-8b63-ded79e08af02" />
 
 </div>
