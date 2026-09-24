@@ -63,6 +63,8 @@ return [
     // Buttons and actions - 按钮与操作
     'button_admin_panel' => '管理面板',
     'button_teleport' => '传送',
+    'button_teleporting' => '传送中...',
+    'button_cancel' => '取消',
     'button_update_email' => '更新邮箱',
     'button_change_password' => '确认修改密码',
     'button_update_avatar' => '更新头像',

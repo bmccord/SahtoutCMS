@@ -62,6 +62,8 @@ return [
     // Кнопки и действия
     'button_admin_panel' => 'Админ-панель',
     'button_teleport' => 'Телепорт',
+    'button_teleporting' => 'Телепортация...',
+    'button_cancel' => 'Отмена',
     'button_update_email' => 'Обновить Email',
     'button_change_password' => 'Сменить пароль',
     'button_update_avatar' => 'Обновить аватар',

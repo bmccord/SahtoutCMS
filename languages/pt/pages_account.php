@@ -63,6 +63,8 @@ return [
     // Botões e ações
     'button_admin_panel' => 'Painel Administrativo',
     'button_teleport' => 'Teleportar',
+    'button_teleporting' => 'Teleportando...',
+    'button_cancel' => 'Cancelar',
     'button_update_email' => 'Atualizar Email',
     'button_change_password' => 'Alterar Senha',
     'button_update_avatar' => 'Atualizar Avatar',

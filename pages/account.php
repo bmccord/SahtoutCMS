@@ -713,6 +713,59 @@ ob_start();
                 padding: 1.5rem 0.75rem;
             }
         }
+
+        /* Custom teleport confirmation popup (replaces the native confirm() dialog) */
+        .teleport-modal {
+            display: none;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .teleport-modal.is-open {
+            display: flex;
+        }
+
+        .teleport-modal-dialog {
+            background: rgba(10, 14, 22, 0.97);
+            border: 1px solid rgba(201, 162, 39, 0.45);
+            box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Busy label is only rendered while the confirmed teleport is in flight */
+        .teleport-form .teleport-btn-busy {
+            display: none;
+        }
+
+        /* Locked state: applied by JS only after the teleport was confirmed.
+           The cooldown-disabled button never gets this class, so its look is untouched. */
+        .teleport-form button[type="submit"].is-submitting,
+        .teleport-form button[type="submit"].is-submitting:hover,
+        .teleport-form button[type="submit"].is-submitting:active {
+            background: rgba(0, 0, 0, 0.45);
+            border-color: rgba(125, 131, 140, 0.35);
+            color: #8b929b;
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+            filter: grayscale(1);
+        }
+
+        .teleport-form button[type="submit"].is-submitting .teleport-btn-idle {
+            display: none;
+        }
+
+        .teleport-form button[type="submit"].is-submitting .teleport-btn-busy {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        @media (max-width: 767px) {
+            .teleport-modal-dialog {
+                width: 100%;
+            }
+        }
     </style>
 <?php
 $page_head = ob_get_clean();
@@ -734,7 +787,7 @@ include_once $project_root . 'includes/header.php';
                 </h1>
                 <?php if (!empty($accountInfo['last_login'])): ?>
                     <span class="ml-auto text-sm bg-black/40 px-4 py-1.5 border border-[rgba(201,162,39,0.15)] text-gray-300">
-                        <i class="far fa-clock mr-1"></i> Last login: <?php echo htmlspecialchars($accountInfo['last_login']); ?>
+                        <i class="far fa-clock mr-1 text-[#f2cf5b]"></i> <?php echo translate('label_last_login', 'Last login'); ?>: <span class="text-gray-200 font-semibold"><?php echo htmlspecialchars($accountInfo['last_login']); ?></span>
                     </span>
                 <?php endif; ?>
             </div>
@@ -845,9 +898,9 @@ include_once $project_root . 'includes/header.php';
                                     <i class="far fa-calendar-plus mr-1"></i>
                                     <?php echo translate('label_join_date', 'Join Date'); ?>: <?php echo $accountInfo['joindate'] ?? 'N/A'; ?>
                                 </p>
-                                <p class="text-sm">
-                                    <i class="far fa-clock mr-1"></i>
-                                    <?php echo translate('label_last_login', 'Last Login'); ?>: <?php echo $accountInfo['last_login'] ?? translate('never', 'Never'); ?>
+                                <p class="text-sm text-gray-300">
+                                    <i class="far fa-clock mr-1 text-[#f2cf5b]"></i>
+                                    <?php echo translate('label_last_login', 'Last Login'); ?>: <span class="text-gray-200 font-semibold"><?php echo $accountInfo['last_login'] ?? translate('never', 'Never'); ?></span>
                                 </p>
                             </div>
                         </div>
@@ -919,7 +972,7 @@ include_once $project_root . 'includes/header.php';
                                         <span class="text-lg font-bold text-white"><?php echo htmlspecialchars($char['name']); ?></span>
                                     </div>
                                     <div class="flex flex-wrap items-center gap-3 mt-2 text-sm">
-                                        <span><?php echo getClassIcon($char['class']); ?> <?php echo translate('label_level', 'Level'); ?> <?php echo $char['level']; ?></span>
+                                        <span class="text-gray-300"><?php echo getClassIcon($char['class']); ?> <?php echo translate('label_level', 'Level'); ?> <?php echo $char['level']; ?></span>
                                         <span class="text-[#f2cf5b]"><?php echo number_format($char['money'] / 10000, 2); ?>g</span>
                                         <span><?php echo getOnlineStatus($char['online']); ?></span>
                                     </div>
@@ -933,7 +986,7 @@ include_once $project_root . 'includes/header.php';
                                     $minutes = ceil($cooldown_remaining / 60);
                                     ?>
                                     
-                                    <form method="post" class="mt-3" onsubmit="return confirm('<?php echo translate('confirm_teleport', 'Teleport this character?'); ?>');">
+                                    <form method="post" class="mt-3 teleport-form">
                                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                         <input type="hidden" name="guid" value="<?php echo $char['guid']; ?>">
                                         <div class="flex flex-wrap gap-2">
@@ -943,7 +996,7 @@ include_once $project_root . 'includes/header.php';
                                                 <option value="dalaran"><?php echo translate('city_dalaran', 'Dalaran'); ?></option>
                                             </select>
                                             <button class="px-4 py-1.5 bg-[rgba(242,207,82,0.15)] border border-[rgba(201,162,39,0.3)] text-[#f2cf5b] hover:bg-[rgba(242,207,82,0.25)] transition-all duration-300 text-sm font-semibold whitespace-nowrap" type="submit" name="teleport_character" <?php echo $is_on_cooldown ? 'disabled' : ''; ?>>
-                                                <i class="fas fa-arrow-right mr-1"></i><?php echo translate('button_teleport', 'Teleport'); ?>
+                                                <span class="teleport-btn-idle"><i class="fas fa-arrow-right mr-1"></i><?php echo translate('button_teleport', 'Teleport'); ?></span><span class="teleport-btn-busy"><i class="fas fa-circle-notch fa-spin mr-1"></i><?php echo translate('button_teleporting', 'Teleporting...'); ?></span>
                                             </button>
                                         </div>
                                         <?php if ($is_on_cooldown): ?>
@@ -1101,6 +1154,24 @@ include_once $project_root . 'includes/header.php';
     </div>
 </div>
 
+<!-- Custom teleport confirmation popup (frontend only - the POST form, CSRF token and all server-side validation stay unchanged) -->
+<div id="teleport-modal" class="teleport-modal fixed inset-0 items-center justify-center px-4" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="teleport-modal-title" aria-describedby="teleport-modal-message">
+    <div class="absolute inset-0" data-teleport-cancel></div>
+    <div class="teleport-modal-dialog glass-card relative w-full max-w-md p-6 text-center">
+        <i class="fas fa-arrow-right text-3xl text-[#f2cf5b] mb-3"></i>
+        <h3 id="teleport-modal-title" class="text-xl font-bold text-[#f2cf5b]"><?php echo translate('button_teleport', 'Teleport'); ?></h3>
+        <p id="teleport-modal-message" class="text-sm text-gray-300 mt-2"><?php echo translate('confirm_teleport', 'Teleport this character?'); ?></p>
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-6">
+            <button type="button" class="px-6 py-2 border border-[rgba(201,162,39,0.3)] text-gray-300 hover:text-white hover:border-[#f2cf5b] transition-all duration-300 font-semibold cursor-pointer" data-teleport-cancel>
+                <?php echo translate('button_cancel', 'Cancel'); ?>
+            </button>
+            <button type="button" id="teleport-modal-confirm" class="px-6 py-2 bg-[rgba(242,207,82,0.15)] border border-[rgba(201,162,39,0.3)] text-[#f2cf5b] hover:bg-[rgba(242,207,82,0.25)] transition-all duration-300 font-semibold cursor-pointer">
+                <i class="fas fa-arrow-right mr-1"></i><?php echo translate('button_teleport', 'Teleport'); ?>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- JavaScript for Tabs and Avatar Selection -->
 <script>
     // Tab switching functionality
@@ -1183,6 +1254,116 @@ include_once $project_root . 'includes/header.php';
             }, 1000);
         }
     });
+
+    // Custom teleport confirmation popup - replaces the native confirm() dialog.
+    // The real POST form, its CSRF token and all server-side checks stay untouched:
+    // this only adds a frontend confirmation step before the form is submitted.
+    (function () {
+        const modal = document.getElementById('teleport-modal');
+        if (!modal) return;
+
+        const confirmButton = document.getElementById('teleport-modal-confirm');
+        const cancelTargets = modal.querySelectorAll('[data-teleport-cancel]');
+        let pendingForm = null;
+        let lastTrigger = null;
+
+        function openTeleportModal(form) {
+            pendingForm = form;
+            lastTrigger = document.activeElement;
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            if (confirmButton) {
+                confirmButton.focus();
+            }
+        }
+
+        function closeTeleportModal() {
+            pendingForm = null;
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            if (lastTrigger && typeof lastTrigger.focus === 'function') {
+                lastTrigger.focus();
+            }
+            lastTrigger = null;
+        }
+
+        function confirmTeleport() {
+            const form = pendingForm;
+            if (!form) return;
+
+            // Let the submit handler below pass the real submission through,
+            // and block every other submit attempt for this character
+            form.dataset.teleportConfirmed = '1';
+            form.dataset.teleportSubmitting = '1';
+            closeTeleportModal();
+
+            const submitter = form.querySelector('button[type="submit"][name="teleport_character"]');
+            if (typeof form.requestSubmit === 'function') {
+                // requestSubmit() keeps the button name/value (teleport_character) in the POST data
+                if (submitter) {
+                    form.requestSubmit(submitter);
+                } else {
+                    form.requestSubmit();
+                }
+            } else {
+                // Legacy fallback: keep the submit button name so the backend still receives it
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'teleport_character';
+                hidden.value = '1';
+                form.appendChild(hidden);
+                form.submit();
+            }
+
+            // Disable the button only after the form data has been collected: the backend
+            // checks isset($_POST['teleport_character']), so the button value must stay in
+            // the POST payload (disabled controls are not submitted).
+            if (submitter) {
+                submitter.disabled = true;
+                submitter.classList.add('is-submitting');
+                submitter.setAttribute('aria-busy', 'true');
+            }
+
+            // Clear the one-shot confirmation flag in case the browser never navigates away
+            // (further submits stay blocked by the in-flight guard in the submit handler)
+            window.setTimeout(function () {
+                form.dataset.teleportConfirmed = '';
+            }, 1000);
+        }
+
+        // Every character card has its own form, so bind them all
+        document.querySelectorAll('form.teleport-form').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (form.dataset.teleportConfirmed === '1') {
+                    return; // already confirmed - post normally
+                }
+                event.preventDefault();
+                if (form.dataset.teleportSubmitting === '1') {
+                    return; // a confirmed teleport is already in flight - never send it twice
+                }
+                // Native HTML5 validation already passed here; ask for confirmation first
+                openTeleportModal(form);
+            });
+        });
+
+        if (confirmButton) {
+            confirmButton.addEventListener('click', confirmTeleport);
+        }
+
+        // Clicking the dark overlay closes the popup without submitting
+        cancelTargets.forEach(function (element) {
+            element.addEventListener('click', function () {
+                closeTeleportModal();
+            });
+        });
+
+        // Escape key closes the popup without submitting
+        document.addEventListener('keydown', function (event) {
+            if ((event.key === 'Escape' || event.key === 'Esc') && modal.classList.contains('is-open')) {
+                closeTeleportModal();
+            }
+        });
+    })();
 </script>
 
 <?php include_once $project_root . 'includes/footer.php'; ?>
