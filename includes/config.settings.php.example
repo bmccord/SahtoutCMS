@@ -15,6 +15,11 @@ $youtube_description = 'Lichking Trailer, Replace it with your own ....';
 // Logo
 $site_logo = 'img/logo.png';
 
+// Discord server id for the "Join Our Discord" widget on the home page.
+// Find it in Discord: Server Settings -> Widget -> Server ID (the widget
+// must be enabled there or it will not render). Leave blank to hide the block.
+$discord_widget_id = '1405755152085815337';
+
 // Social links
 $social_links = [
     'facebook' => 'https://facebook.com/blodyiheb',

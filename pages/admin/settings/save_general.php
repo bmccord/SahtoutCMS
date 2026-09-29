@@ -138,6 +138,10 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
+// Discord widget server id. Digits only (a Discord snowflake); blank hides
+// the home page block entirely.
+$discord_widget_id_new = preg_replace('/\D/', '', (string)($_POST['discord_widget_id'] ?? ''));
+
 // Handle social links (YOUR ORIGINAL CODE - UNTOUCHED)
 $social_links_new = [
     'facebook'  => filter_input(INPUT_POST, 'facebook', FILTER_VALIDATE_URL) ?: '',
@@ -177,6 +181,10 @@ if (empty($errors)) {
         $config_content .= "\$youtube_embed_url = " . var_export($youtube_embed_url_new, true) . ";\n";
         $config_content .= "\$youtube_title = " . var_export($youtube_title_new, true) . ";\n";
         $config_content .= "\$youtube_description = " . var_export($youtube_description_new, true) . ";\n\n";
+
+        // === Discord widget ===
+        $config_content .= "// Discord server id for the home page widget (blank hides it)\n";
+        $config_content .= "\$discord_widget_id = " . var_export($discord_widget_id_new, true) . ";\n\n";
 
         // === Social Links ===
         $config_content .= "// Social links\n";

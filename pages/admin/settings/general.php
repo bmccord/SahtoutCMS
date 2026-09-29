@@ -303,6 +303,28 @@ include $project_root . 'includes/header.php';
                                 <div class="text-[#6a7a8a] text-xs mt-1">
                                     <?php echo translate('help_social_links', 'Enter the full URLs for your social media profiles. Leave blank to hide.'); ?>
                                 </div>
+
+                                <!-- Discord widget server id -->
+                                <div class="flex items-stretch mt-4">
+                                    <span class="inline-flex items-center px-4 bg-[#0a0e16]/80 border border-[#c9a227]/30 border-r-0 rounded-l-sm text-[#c9a227]">
+                                            <i class="fab fa-discord"></i>
+                                    </span>
+                                    <input type="text"
+                                           name="discord_widget_id"
+                                           inputmode="numeric"
+                                           pattern="[0-9]*"
+                                           class="flex-1 px-4 py-3 text-[0.95rem] text-[#e5e7eb]
+                                                  bg-[#0a0e16]/80 border border-[#c9a227]/30 border-l-0 rounded-r-sm
+                                                  focus:border-[#f2cf5b] focus:shadow-[0_0_10px_rgba(242,207,82,.2)]
+                                                  focus:bg-[#0f141e]/90 outline-none transition-all duration-200
+                                                  placeholder:text-[#96aac8]/40"
+                                           maxlength="32"
+                                           placeholder="<?php echo translate('placeholder_discord_widget_id', 'Discord widget server ID'); ?>"
+                                           value="<?php echo htmlspecialchars($discord_widget_id ?? ''); ?>">
+                                </div>
+                                <div class="text-[#6a7a8a] text-xs mt-1">
+                                    <?php echo translate('help_discord_widget_id', 'Discord: Server Settings -> Widget -> enable it, then copy the Server ID. Leave blank to hide the "Join Our Discord" block on the home page.'); ?>
+                                </div>
                             </div>
 
                             <!-- Save Button -->
