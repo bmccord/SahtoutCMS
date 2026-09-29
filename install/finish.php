@@ -6,15 +6,49 @@ include __DIR__ . '/header.inc.php';
 // Set current step for progress stepper
 $current_step = 7;
 
+// Seed the config files the wizard never writes itself.
+//
+// Five files are produced by the steps above (database, reCAPTCHA, realm, mail,
+// SOAP). Two are not: config.settings.php and armory_config.php hold site
+// branding and armory display options, which have no installer step - upstream
+// relied on them simply being present in the source tree. They are ignored by
+// git (they are rewritten at runtime by the admin panel), so a fresh checkout
+// does not have them and the site fataled immediately after a successful
+// install. Create them from their .example templates when absent.
+//
+// Only these two are seeded. The rest must be written by their own step, so a
+// skipped step is still reported below rather than papered over.
+$seedFromExample = [
+    __DIR__ . '/../includes/config.settings.php',
+    __DIR__ . '/../includes/armory_config.php',
+];
+$seedErrors = [];
+foreach ($seedFromExample as $target) {
+    if (file_exists($target)) {
+        continue;
+    }
+    $template = $target . '.example';
+    if (!file_exists($template)) {
+        $seedErrors[] = basename($target) . ' (and its .example template is missing)';
+        continue;
+    }
+    if (!@copy($template, $target)) {
+        $seedErrors[] = basename($target) . ' (could not be created - check permissions on includes/)';
+    }
+}
+
 // Check required config files
 $configFiles = [
     'Database config' => __DIR__ . '/../includes/config.php',
     'reCAPTCHA config' => __DIR__ . '/../includes/config.cap.php',
     'SOAP config' => __DIR__ . '/../includes/soap.conf.php',
     'Mail config' => __DIR__ . '/../includes/config.mail.php',
+    'Realm config' => __DIR__ . '/../includes/realm_config.php',
+    'Site settings' => __DIR__ . '/../includes/config.settings.php',
+    'Armory config' => __DIR__ . '/../includes/armory_config.php',
 ];
 
-$errors = [];
+$errors = $seedErrors;
 foreach ($configFiles as $name => $path) {
     if (!file_exists($path)) {
         $errors[] = translate('err_config_missing', 'Configuration file missing:') . ' ' . basename($path);
