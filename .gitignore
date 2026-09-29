@@ -3,3 +3,7 @@ vendor/
 logs/
 cache/
 img/
+
+# Local instance configuration - created by the installer / admin panel.
+# Copy the matching .example file and edit, or let the web installer write it.
+includes/config.php includes/config.cap.php includes/config.mail.php includes/config.settings.php includes/realm_config.php includes/soap.conf.php includes/armory_config.php
