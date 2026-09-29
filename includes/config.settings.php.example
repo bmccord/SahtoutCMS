@@ -16,8 +16,13 @@ $youtube_description = 'Lichking Trailer, Replace it with your own ....';
 $site_logo = 'img/logo.png';
 
 // Discord server id for the "Join Our Discord" widget on the home page.
-// Find it in Discord: Server Settings -> Widget -> Server ID (the widget
-// must be enabled there or it will not render). Leave blank to hide the block.
+// In Discord: Server Settings -> Engagement -> Server Widget -> enable
+// "Enable Server Widget", then copy the Server ID shown on that same screen.
+// Set an Invite Channel there as well if visitors should be able to join.
+// The widget renders ONLY when it is enabled server-side; verify an id with
+//   https://discord.com/api/guilds/<id>/widget.json
+// which returns data when enabled and 404 "Unknown Guild" otherwise.
+// Leave blank to hide the block entirely.
 $discord_widget_id = '1405755152085815337';
 
 // Social links

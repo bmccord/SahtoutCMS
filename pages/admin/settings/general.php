@@ -323,7 +323,7 @@ include $project_root . 'includes/header.php';
                                            value="<?php echo htmlspecialchars($discord_widget_id ?? ''); ?>">
                                 </div>
                                 <div class="text-[#6a7a8a] text-xs mt-1">
-                                    <?php echo translate('help_discord_widget_id', 'Discord: Server Settings -> Widget -> enable it, then copy the Server ID. Leave blank to hide the "Join Our Discord" block on the home page.'); ?>
+                                    <?php echo translate('help_discord_widget_id', 'In Discord: Server Settings -> Engagement -> Server Widget -> turn on Enable Server Widget, then copy the Server ID shown on that same screen. Set an Invite Channel there too if you want visitors to be able to join. Leave blank to hide the "Join Our Discord" block. Check an ID with https://discord.com/api/guilds/THE_ID/widget.json - it only returns data when the widget is enabled.'); ?>
                                 </div>
                             </div>
 
