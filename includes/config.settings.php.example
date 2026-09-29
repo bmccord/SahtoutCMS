@@ -29,6 +29,14 @@ $features = [
     'vote'    => true,
 ];
 
+// Bug tracker link for the "Bugtracker" tab on the home page. Any URL: a
+// GitHub issues page, a Discord invite, a form. Leave blank to hide the tab.
+//
+// Consider WHO clicks it. Players report game bugs (a broken quest, a stuck
+// NPC); those do not belong on a CMS repository. Point this where your players
+// should go, which may not be where website bugs go.
+$bugtracker_url = '';
+
 // Discord server id for the "Join Our Discord" widget on the home page.
 // In Discord: Server Settings -> Engagement -> Server Widget -> enable
 // "Enable Server Widget", then copy the Server ID shown on that same screen.

@@ -337,6 +337,26 @@ include $project_root . 'includes/header.php';
                                     </div>
                                 </div>
 
+                                <!-- Bug tracker URL -->
+                                <div class="flex items-stretch mt-4">
+                                    <span class="inline-flex items-center px-4 bg-[#0a0e16]/80 border border-[#c9a227]/30 border-r-0 rounded-l-sm text-[#c9a227]">
+                                            <i class="fas fa-bug"></i>
+                                    </span>
+                                    <input type="url"
+                                           name="bugtracker_url"
+                                           class="flex-1 px-4 py-3 text-[0.95rem] text-[#e5e7eb]
+                                                  bg-[#0a0e16]/80 border border-[#c9a227]/30 border-l-0 rounded-r-sm
+                                                  focus:border-[#f2cf5b] focus:shadow-[0_0_10px_rgba(242,207,82,.2)]
+                                                  focus:bg-[#0f141e]/90 outline-none transition-all duration-200
+                                                  placeholder:text-[#96aac8]/40"
+                                           maxlength="255"
+                                           placeholder="<?php echo translate('placeholder_bugtracker_url', 'Bug tracker URL'); ?>"
+                                           value="<?php echo htmlspecialchars($bugtracker_url ?? ''); ?>">
+                                </div>
+                                <div class="text-[#6a7a8a] text-xs mt-1">
+                                    <?php echo translate('help_bugtracker_url', 'Where the home page Bugtracker tab sends people - a GitHub issues page, a Discord invite, a form. Remember your players report GAME bugs, which may belong somewhere different from website bugs. Leave blank to hide the tab.'); ?>
+                                </div>
+
                                 <!-- Discord widget server id -->
                                 <div class="flex items-stretch mt-4">
                                     <span class="inline-flex items-center px-4 bg-[#0a0e16]/80 border border-[#c9a227]/30 border-r-0 rounded-l-sm text-[#c9a227]">

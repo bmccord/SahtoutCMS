@@ -472,7 +472,9 @@ $result = $site_db->query($query);
                 <section class="wow-panel p-3 sm:p-4 md:p-6">
                     <div class="flex flex-wrap gap-1 sm:gap-2 mb-4 sm:mb-6">
                         <button class="tab-btn text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2" data-tab="youtube"><?php echo translate('home_tab_youtube', 'YouTube'); ?></button>
+                        <?php if (!empty($bugtracker_url)): ?>
                         <button class="tab-btn text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2" data-tab="bugtracker"><?php echo translate('home_tab_bugtracker', 'Bugtracker'); ?></button>
+                        <?php endif; ?>
                     </div>
 
                     <div class="tab-content">
@@ -495,13 +497,20 @@ $result = $site_db->query($query);
                             </div>
                         </div>
 
+                        <?php if (!empty($bugtracker_url)): ?>
                         <div class="tab-panel" id="panel-bugtracker">
                             <div class="text-center py-8 sm:py-12">
-                                <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                <h3 class="text-lg sm:text-xl font-bold text-white mb-2 force-wrap" style="font-family:'Cinzel',serif;"><?php echo translate('home_bugtracker_title', 'Bugtracker Coming Soon'); ?></h3>
-                                <p class="text-gray-400 text-sm sm:text-base force-wrap"><?php echo translate('home_bugtracker_desc', 'Report bugs and track issues here.'); ?></p>
+                                <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M5 20h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.48 0l-7.1 13.25A2 2 0 005 20z"/></svg>
+                                <h3 class="text-lg sm:text-xl font-bold text-white mb-2 force-wrap" style="font-family:'Cinzel',serif;"><?php echo translate('home_bugtracker_title', 'Bugtracker'); ?></h3>
+                                <p class="text-gray-400 text-sm sm:text-base force-wrap mb-5"><?php echo translate('home_bugtracker_desc', 'Found a problem? Report it so we can fix it.'); ?></p>
+                                <a href="<?php echo htmlspecialchars($bugtracker_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                   target="_blank" rel="noopener noreferrer"
+                                   class="btn-gold inline-flex items-center gap-2 text-xs sm:text-sm px-4 py-2">
+                                    <?php echo translate('home_bugtracker_button', 'Open the bug tracker'); ?>
+                                </a>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </section>
             </div>
@@ -599,10 +608,13 @@ $result = $site_db->query($query);
         startAutoSlide();
 
         const tabs = document.querySelectorAll('.tab-btn');
-        const panels = {
-            youtube: document.getElementById('panel-youtube'),
-            bugtracker: document.getElementById('panel-bugtracker')
-        };
+        // Build from the panels actually present: the bugtracker tab is omitted
+        // entirely when no bug tracker URL is configured.
+        const panels = {};
+        ['youtube', 'bugtracker'].forEach(k => {
+            const el = document.getElementById('panel-' + k);
+            if (el) { panels[k] = el; }
+        });
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));

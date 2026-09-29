@@ -147,6 +147,9 @@ foreach ($feature_keys as $fk) {
     $features_new[$fk] = isset($_POST['feature_' . $fk]);
 }
 
+// Bug tracker URL for the home page tab. Blank hides the tab.
+$bugtracker_url_new = filter_input(INPUT_POST, 'bugtracker_url', FILTER_VALIDATE_URL) ?: '';
+
 // Discord widget server id. Digits only (a Discord snowflake); blank hides
 // the home page block entirely.
 $discord_widget_id_new = preg_replace('/\D/', '', (string)($_POST['discord_widget_id'] ?? ''));
@@ -198,6 +201,10 @@ if (empty($errors)) {
             $config_content .= "    '$fk' => " . ($fv ? 'true' : 'false') . ",\n";
         }
         $config_content .= "];\n\n";
+
+        // === Bug tracker ===
+        $config_content .= "// Bug tracker URL for the home page tab (blank hides the tab)\n";
+        $config_content .= "\$bugtracker_url = " . var_export($bugtracker_url_new, true) . ";\n\n";
 
         // === Discord widget ===
         $config_content .= "// Discord server id for the home page widget (blank hides it)\n";
