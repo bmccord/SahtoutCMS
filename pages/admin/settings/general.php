@@ -304,6 +304,39 @@ include $project_root . 'includes/header.php';
                                     <?php echo translate('help_social_links', 'Enter the full URLs for your social media profiles. Leave blank to hide.'); ?>
                                 </div>
 
+                                <!-- Optional site features -->
+                                <div class="mt-6 pt-4 border-t border-[#c9a227]/20">
+                                    <label class="block text-sm font-semibold text-[#f2cf5b] mb-3 font-['Cinzel'] tracking-wide">
+                                        <?php echo translate('label_site_features', 'Site Features'); ?>
+                                    </label>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <?php
+                                        $feature_labels = [
+                                            'gallery' => translate('feature_gallery', 'Gallery (home page)'),
+                                            'news'    => translate('feature_news',    'Latest News'),
+                                            'armory'  => translate('feature_armory',  'Armory'),
+                                            'shop'    => translate('feature_shop',    'Shop'),
+                                            'vote'    => translate('feature_vote',    'Voting'),
+                                        ];
+                                        foreach ($feature_labels as $fkey => $flabel):
+                                            // A key that is absent counts as enabled, matching feature_enabled()
+                                            $fon = !isset($features[$fkey]) || !empty($features[$fkey]);
+                                        ?>
+                                            <label class="flex items-center gap-3 px-4 py-3 bg-[#0a0e16]/80 border border-[#c9a227]/30 rounded-sm cursor-pointer hover:border-[#f2cf5b]/60 transition-colors">
+                                                <input type="checkbox"
+                                                       name="feature_<?php echo $fkey; ?>"
+                                                       value="1"
+                                                       class="accent-[#c9a227] w-4 h-4"
+                                                       <?php echo $fon ? 'checked' : ''; ?>>
+                                                <span class="text-[0.95rem] text-[#e5e7eb]"><?php echo $flabel; ?></span>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <div class="text-[#6a7a8a] text-xs mt-2">
+                                        <?php echo translate('help_site_features', 'Unchecking a feature hides its home page block and its navigation link, and makes its page redirect to the home page.'); ?>
+                                    </div>
+                                </div>
+
                                 <!-- Discord widget server id -->
                                 <div class="flex items-stretch mt-4">
                                     <span class="inline-flex items-center px-4 bg-[#0a0e16]/80 border border-[#c9a227]/30 border-r-0 rounded-l-sm text-[#c9a227]">

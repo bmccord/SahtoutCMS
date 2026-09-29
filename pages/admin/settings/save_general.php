@@ -138,6 +138,15 @@ if (isset($_FILES['logo']) && $_FILES['logo']['error'] === UPLOAD_ERR_OK) {
     }
 }
 
+// Optional site features. Unchecked boxes do not POST at all, so absence means
+// "off" - which is why every key is listed explicitly rather than looped over
+// whatever happens to arrive.
+$feature_keys = ['gallery', 'news', 'armory', 'shop', 'vote'];
+$features_new = [];
+foreach ($feature_keys as $fk) {
+    $features_new[$fk] = isset($_POST['feature_' . $fk]);
+}
+
 // Discord widget server id. Digits only (a Discord snowflake); blank hides
 // the home page block entirely.
 $discord_widget_id_new = preg_replace('/\D/', '', (string)($_POST['discord_widget_id'] ?? ''));
@@ -181,6 +190,14 @@ if (empty($errors)) {
         $config_content .= "\$youtube_embed_url = " . var_export($youtube_embed_url_new, true) . ";\n";
         $config_content .= "\$youtube_title = " . var_export($youtube_title_new, true) . ";\n";
         $config_content .= "\$youtube_description = " . var_export($youtube_description_new, true) . ";\n\n";
+
+        // === Optional features ===
+        $config_content .= "// Optional site features (false hides the block, its nav link and its page)\n";
+        $config_content .= "\$features = [\n";
+        foreach ($features_new as $fk => $fv) {
+            $config_content .= "    '$fk' => " . ($fv ? 'true' : 'false') . ",\n";
+        }
+        $config_content .= "];\n\n";
 
         // === Discord widget ===
         $config_content .= "// Discord server id for the home page widget (blank hides it)\n";

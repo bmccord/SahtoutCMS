@@ -5,6 +5,8 @@ require_once $project_root . 'includes/session.php';
 require_once $project_root . 'includes/item_tooltip.php';
 require_once $project_root . 'languages/language.php';
 require_once $project_root . 'includes/config.settings.php'; // Site title used in $page_title
+require_once __DIR__ . '/../includes/features.php';
+require_feature('shop'); // redirects home when the feature is switched off
 
 $page_class = 'shop';
 

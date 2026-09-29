@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/paths.php';
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
 require_once $project_root . 'includes/config.settings.php';
+require_once $project_root . 'includes/features.php';
 
 $page_class = "home";
 $page_title = $site_title_name . " " . translate('home_page_title', 'Home');
@@ -386,6 +387,7 @@ $result = $site_db->query($query);
                     </div>
                 </div>
 
+                <?php if (feature_enabled('gallery')): ?>
                 <!-- GALLERY -->
                 <section class="wow-panel p-3 sm:p-4 md:p-6">
                     <h2 class="section-title text-lg sm:text-xl md:text-2xl mb-4 sm:mb-5">
@@ -423,7 +425,9 @@ $result = $site_db->query($query);
                         <span class="dot" data-slide="3"></span>
                     </div>
                 </section>
+                <?php endif; ?>
 
+                <?php if (feature_enabled('news')): ?>
                 <!-- NEWS -->
                 <section class="wow-panel p-3 sm:p-4 md:p-6">
                     <div class="flex items-center justify-between mb-4 sm:mb-6 gap-4">
@@ -462,6 +466,7 @@ $result = $site_db->query($query);
                         <?php endif; ?>
                     </div>
                 </section>
+                <?php endif; ?>
 
                 <!-- TABS: YOUTUBE + BUGTRACKER -->
                 <section class="wow-panel p-3 sm:p-4 md:p-6">

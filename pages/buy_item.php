@@ -3,6 +3,9 @@ define('ALLOWED_ACCESS', true);
 require_once __DIR__ . '/../includes/paths.php'; // Include paths.php
 require_once $project_root . 'includes/session.php';
 
+require_once $project_root . 'includes/config.settings.php';
+require_once __DIR__ . '/../includes/features.php';
+require_feature('shop'); // redirects home when the feature is switched off
 // Ensure user is logged in
 if (!isset($_SESSION['user_id'])) {
     error_log("Purchase attempt without login");

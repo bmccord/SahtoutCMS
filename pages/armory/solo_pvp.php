@@ -155,6 +155,8 @@ function classIcon($class) {
 
 // Site settings & translations
 require_once $project_root . 'includes/config.settings.php';
+require_once __DIR__ . '/../../includes/features.php';
+require_feature('armory'); // redirects home when the feature is switched off
 
 // Page configuration
 $page_title = $site_title_name ." ". translate('solo_pvp_page_title', 'Top 50 Players');

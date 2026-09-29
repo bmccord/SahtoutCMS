@@ -11,6 +11,8 @@ ini_set('log_errors', '1');
 // Include paths.php to access $project_root and $base_path
 require_once __DIR__ . '/paths.php';
 
+require_once __DIR__ . '/features.php';
+
 if (!defined('ALLOWED_ACCESS')) {
     header('HTTP/1.1 403 Forbidden');
     exit('Direct access to this file is not allowed.');
@@ -701,17 +703,23 @@ $esc_logo = htmlspecialchars($site_logo ?? '', ENT_QUOTES, 'UTF-8');
                     <?php echo translate('nav_how_to_play', 'How to Play'); ?>
                 </a>
 
+                <?php if (feature_enabled('news')): ?>
                 <a href="<?php echo $esc_base; ?>news" class="nav-link <?php echo $page_class === 'news' ? 'active' : ''; ?>">
                     <?php echo translate('nav_news', 'News'); ?>
                 </a>
+                <?php endif; ?>
 
+                <?php if (feature_enabled('armory')): ?>
                 <a href="<?php echo $esc_base; ?>armory/solo_pvp" class="nav-link <?php echo strpos($page_class, 'armory') !== false ? 'active' : ''; ?>">
                     <?php echo translate('nav_armory', 'Armory'); ?>
                 </a>
+                <?php endif; ?>
 
+                <?php if (feature_enabled('shop')): ?>
                 <a href="<?php echo $esc_base; ?>shop" class="nav-link <?php echo $page_class === 'shop' ? 'active' : ''; ?>">
                     <?php echo translate('nav_shop', 'Shop'); ?>
                 </a>
+                <?php endif; ?>
 
                 <?php if (empty($_SESSION['user_id'])): ?>
                     <a href="<?php echo $esc_base; ?>register" class="nav-link <?php echo $page_class === 'register' ? 'active' : ''; ?>">
@@ -779,10 +787,12 @@ $esc_logo = htmlspecialchars($site_logo ?? '', ENT_QUOTES, 'UTF-8');
 
                                 <div class="dropdown-divider"></div>
 
+                                <?php if (feature_enabled('vote')): ?>
                                 <a href="<?php echo $esc_base; ?>vote" class="dropdown-item force-wrap">
                                     <i class="fas fa-vote-yea w-4 text-center text-[#4ade80]"></i>
                                     <?php echo translate('vote', 'Vote'); ?>
                                 </a>
+                                <?php endif; ?>
 
                                 <div class="dropdown-divider"></div>
 

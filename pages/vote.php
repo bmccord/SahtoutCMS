@@ -6,6 +6,8 @@ require_once __DIR__ . '/../includes/paths.php';
 
 // Use $project_root for filesystem includes
 require_once $project_root . 'includes/config.settings.php';
+require_once __DIR__ . '/../includes/features.php';
+require_feature('vote'); // redirects home when the feature is switched off
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
 

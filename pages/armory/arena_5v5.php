@@ -126,6 +126,8 @@ if ($result) {
 
 // Ensure site settings are loaded for page head config
 require_once $project_root . 'includes/config.settings.php';
+require_once __DIR__ . '/../../includes/features.php';
+require_feature('armory'); // redirects home when the feature is switched off
 
 // Page configuration
 $page_title = $site_title_name . " " . translate('arena_5v5_page_title', 'Top 50 5v5 Arena Teams');

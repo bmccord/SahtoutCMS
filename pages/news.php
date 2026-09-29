@@ -4,6 +4,8 @@ require_once __DIR__ . '/../includes/paths.php';
 require_once $project_root . 'includes/session.php';
 require_once $project_root . 'languages/language.php';
 require_once $project_root . 'includes/config.settings.php'; // $site_title_name is used in the page metadata below
+require_once __DIR__ . '/../includes/features.php';
+require_feature('news'); // redirects home when the feature is switched off
 $page_class = 'news';
 
 $default_image_url = 'img/newsimg/news.png';

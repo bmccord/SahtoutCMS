@@ -286,6 +286,9 @@ $page_head = ob_get_clean();
 
 // Render global website header
 require_once $project_root . 'includes/header.php';
+require_once $project_root . 'includes/config.settings.php';
+require_once __DIR__ . '/../../includes/features.php';
+require_feature('armory'); // redirects home when the feature is switched off
 ?>
 
 <div class="arena-content min-h-screen flex items-start justify-center px-4 md:px-8 py-8">

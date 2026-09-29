@@ -15,6 +15,20 @@ $youtube_description = 'Lichking Trailer, Replace it with your own ....';
 // Logo
 $site_logo = 'img/logo.png';
 
+// Optional site features. Set any of these to false to switch the feature off
+// completely: its home page block, its navigation link, and its page (which
+// then redirects to the home page).
+//
+// A key removed from this array counts as enabled, so upgrading an existing
+// installation never silently loses a section.
+$features = [
+    'gallery' => true,
+    'news'    => true,
+    'armory'  => true,
+    'shop'    => true,
+    'vote'    => true,
+];
+
 // Discord server id for the "Join Our Discord" widget on the home page.
 // In Discord: Server Settings -> Engagement -> Server Widget -> enable
 // "Enable Server Widget", then copy the Server ID shown on that same screen.
